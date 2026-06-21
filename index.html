@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Galactic Crisis Command | Advanced Simulation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        @font-face {
+            font-family: 'StarJedi';
+            src: url('Starjedi.ttf') format('truetype');
+        }
+        
+        body { font-family: 'Rajdhani', sans-serif; background-color: #030303; color: #f3f4f6; overflow: hidden; }
+        .font-orbitron { font-family: 'Orbitron', sans-serif; font-weight: 700; }
+        .font-starjedi { font-family: 'StarJedi', 'Orbitron', sans-serif; letter-spacing: 0.1em; }
+        
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0a0a0c; }
+        ::-webkit-scrollbar-thumb { background: #222530; border-radius: 3px; }
+        .map-viewport { background-image: radial-gradient(rgba(255,255,255,0.03) 1px, transparent 0); background-size: 24px 24px; }
+        
+        /* Mod FAB Animation & Rounded Style */
+        .fab-menu { 
+            transform: scaleY(0) scaleX(0); 
+            transform-origin: bottom right; 
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s; 
+            opacity: 0; 
+            border-radius: 2rem; /* Dairesel/Oval görünüm */
+        }
+        .fab-menu.open { transform: scaleY(1) scaleX(1); opacity: 1; }
+        
+        /* Entity Animations */
+        @keyframes pulse-ring { 0% { box-shadow: 0 0 0 0 rgba(var(--tw-shadow-color), 0.7); } 70% { box-shadow: 0 0 0 10px rgba(var(--tw-shadow-color), 0); } 100% { box-shadow: 0 0 0 0 rgba(var(--tw-shadow-color), 0); } }
+        .entity-marker { transition: left 2s ease-in-out, top 2s ease-in-out; cursor: pointer; z-index: 25; }
+        .entity-pending { animation: pulse-ring 2s infinite; }
+
+        /* Detonate (Patlama) Animation */
+        @keyframes explode {
+            0% { transform: scale(1); opacity: 1; filter: drop-shadow(0 0 5px red); background-color: inherit; }
+            40% { transform: scale(2.5); opacity: 1; filter: drop-shadow(0 0 20px #ffaa00) brightness(2); background-color: #ffaa00; border-color: #fff; }
+            100% { transform: scale(5); opacity: 0; filter: drop-shadow(0 0 50px red); background-color: red; }
+        }
+        .explode-anim {
+            animation: explode 0.8s forwards ease-out !important;
+            pointer-events: none;
+            z-index: 50;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col justify-between antialiased selection:bg-zinc-800 selection:text-white">
+
+    <!-- LOGIN SCREEN -->
+    <div id="login-screen" class="absolute inset-0 bg-[#030303] z-50 flex flex-col justify-center items-center p-4">
+        <div class="max-w-md w-full bg-[#0a0a0f] border border-zinc-800 p-8 text-center shadow-2xl">
+            <h1 class="font-starjedi text-2xl md:text-3xl text-white mb-2">GALACTIC COMMAND</h1>
+            <p class="text-xs text-zinc-500 uppercase tracking-widest mb-8">SECURE LOGIN REQUIRED</p>
+            <div class="space-y-4">
+                <button onclick="initDashboard('sith')" class="w-full py-3 bg-transparent border border-zinc-800 text-zinc-300 font-orbitron tracking-wider uppercase text-sm hover:border-red-600 hover:text-red-500 transition-all">Sith Order</button>
+                <button onclick="initDashboard('jedi')" class="w-full py-3 bg-transparent border border-zinc-800 text-zinc-300 font-orbitron tracking-wider uppercase text-sm hover:border-cyan-500 hover:text-cyan-400 transition-all">Jedi Republic</button>
+                <button onclick="initDashboard('mod')" class="w-full py-3 bg-zinc-900/50 border border-zinc-700 text-white font-orbitron tracking-wider uppercase text-sm hover:bg-zinc-900 hover:border-amber-500 transition-all">Moderator Entry</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN APP -->
+    <div id="dashboard" class="hidden w-full h-full flex flex-col md:flex-row overflow-hidden relative">
+        
+        <!-- LEFT PANEL: COMMS -->
+        <div class="w-full md:w-80 bg-[#07070a] border-b md:border-r border-zinc-800/80 flex flex-col h-1/3 md:h-full shrink-0">
+            <div class="p-4 border-b border-zinc-800/80 flex justify-between items-center bg-[#0a0a0f]">
+                <span id="panel-badge" class="font-orbitron text-xs px-2 py-1 tracking-wider uppercase">OFFLINE</span>
+                <span class="text-xs text-zinc-500 font-mono" id="live-clock">00:00:00</span>
+            </div>
+            <div id="chat-box" class="flex-1 p-4 overflow-y-auto space-y-3 font-mono text-xs"></div>
+            <div class="p-3 bg-[#0a0a0f] border-t border-zinc-800/80 space-y-2">
+                <div class="flex gap-2">
+                    <input type="text" id="msg-input" placeholder="Transmit message..." onkeydown="if(event.key==='Enter') sendMessage('default')" class="flex-1 bg-zinc-950 border border-zinc-800 text-white px-3 py-2 text-xs focus:outline-none focus:border-zinc-600 font-mono">
+                    <button onclick="sendMessage('default')" class="bg-zinc-900 border border-zinc-700 text-zinc-300 px-4 py-2 text-xs uppercase font-orbitron hover:bg-zinc-800 transition-colors">SEND</button>
+                </div>
+                <button id="mod-direct-btn" onclick="sendMessage('mod')" class="w-full py-1.5 text-[10px] uppercase font-orbitron tracking-wider text-zinc-500 hover:text-amber-500 bg-zinc-950/50 border border-zinc-900 transition-all text-center">
+                    📡 DIRECT MESSAGE TO MODERATOR
+                </button>
+            </div>
+        </div>
+
+        <!-- CENTER AREA: TACTICAL MAP -->
+        <div class="flex-1 flex flex-col bg-[#020203] relative h-2/3 md:h-full">
+            <div class="p-3 bg-[#0a0a0f] border-b border-zinc-800/80 flex justify-between items-center z-10 select-none">
+                <div class="flex gap-1.5 text-xs">
+                    <button id="tool-pan" onclick="setTool('pan')" class="px-3 py-1 bg-zinc-900 border border-zinc-600 font-orbitron uppercase text-white tracking-wider">PAN</button>
+                    <button id="tool-draw" onclick="setTool('draw')" class="px-3 py-1 bg-transparent border border-zinc-800 font-orbitron uppercase text-zinc-500 tracking-wider">DRAW</button>
+                    <button id="tool-mark" onclick="setTool('mark')" class="px-3 py-1 bg-transparent border border-zinc-800 font-orbitron uppercase text-zinc-500 tracking-wider">MARK</button>
+                </div>
+                <!-- State Alert -->
+                <div id="action-alert" class="hidden px-4 py-1 text-xs font-orbitron font-bold uppercase animate-pulse"></div>
+                
+                <div class="flex items-center gap-1 bg-zinc-950 p-0.5 border border-zinc-800/60">
+                    <button onclick="adjustZoom(-0.15)" class="w-7 h-7 text-sm font-mono text-zinc-400 hover:bg-zinc-900">-</button>
+                    <span id="zoom-indicator" class="text-[11px] font-mono w-14 text-center text-zinc-500">100%</span>
+                    <button onclick="adjustZoom(0.15)" class="w-7 h-7 text-sm font-mono text-zinc-400 hover:bg-zinc-900">+</button>
+                    <button onclick="resetZoom()" class="px-2 h-7 text-[10px] uppercase font-orbitron text-zinc-500 border-l border-zinc-850 hover:bg-zinc-900">RESET</button>
+                </div>
+            </div>
+
+            <!-- Map Viewport -->
+            <div id="map-viewport" class="flex-1 overflow-hidden relative map-viewport cursor-grab active:cursor-grabbing">
+                <div id="map-transformer" class="absolute origin-top-left transition-transform duration-75 ease-out" style="transform: translate(0px, 0px) scale(1);">
+                    <img id="galaxy-map" src="star_wars_galaxy_map.jpeg" alt="Galaxy Map" class="max-w-none block pointer-events-none select-none" onload="setupMapLayer()">
+                    <canvas id="drawing-canvas" class="absolute inset-0 z-10 pointer-events-none"></canvas>
+                    <div id="entity-layer" class="absolute inset-0 z-20 pointer-events-none"></div>
+                </div>
+            </div>
+
+            <!-- CONTEXT MENU (Pop-up upon clicking an entity) -->
+            <div id="context-menu" class="hidden absolute bg-[#0a0a0f] border border-zinc-700 z-50 shadow-2xl p-2 min-w-[150px] rounded-lg">
+                <div id="cm-title" class="text-xs font-orbitron border-b border-zinc-800 pb-1 mb-2 text-white truncate">Title</div>
+                <div id="cm-actions" class="flex flex-col gap-1"></div>
+            </div>
+
+        </div>
+
+        <!-- RIGHT PANEL: STRATEGIC INTEL -->
+        <div class="w-full md:w-80 bg-[#07070a] border-t md:border-l border-zinc-800/80 flex flex-col h-1/3 md:h-full shrink-0">
+            <div class="p-4 border-b border-zinc-800/80 bg-[#0a0a0f]">
+                <h3 class="font-starjedi text-sm tracking-wider text-zinc-400">ACTIVE ENTITIES</h3>
+            </div>
+            <div class="flex-1 overflow-y-auto">
+                <table class="w-full text-left border-collapse text-xs font-mono">
+                    <thead>
+                        <tr class="bg-zinc-950 text-zinc-500 border-b border-zinc-900">
+                            <th class="p-3 font-normal">ENTITY</th>
+                            <th class="p-3 font-normal text-right">TYPE</th>
+                        </tr>
+                    </thead>
+                    <tbody id="intel-table-body" class="divide-y divide-zinc-900 text-zinc-300"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- MODERATOR FAB BUTTON (Fixed at Bottom Right globally) -->
+        <div id="mod-fab-container" class="fixed bottom-6 right-6 hidden flex-col items-end gap-4 z-50">
+            <!-- Deploy Menu -->
+            <div id="mod-fab-menu" class="fab-menu bg-[#0a0a0f]/95 backdrop-blur-sm border-2 border-amber-600/50 p-6 w-80 shadow-[0_0_30px_rgba(217,119,6,0.3)]">
+                <h4 class="font-starjedi text-amber-500 text-[11px] mb-4 border-b border-zinc-800 pb-2 text-center">DEPLOYMENT PANEL</h4>
+                <select id="deploy-faction" class="w-full bg-zinc-900 border border-zinc-700 text-white text-xs p-2.5 mb-3 font-mono outline-none rounded-md">
+                    <option value="sith">Sith Order</option>
+                    <option value="jedi">Jedi Republic</option>
+                </select>
+                <select id="deploy-type" class="w-full bg-zinc-900 border border-zinc-700 text-white text-xs p-2.5 mb-3 font-mono outline-none rounded-md">
+                    <option value="Military Base">Military Base 🏰</option>
+                    <option value="Ship">Ship / Fighter 🚀</option>
+                    <option value="Cruiser">Cruiser 🛸</option>
+                    <option value="Weapon">Weapon Platform ⚔️</option>
+                    <option value="Space Station">Space Station 🛰️</option>
+                </select>
+                <input type="text" id="deploy-name" placeholder="Entity Name (e.g. Death Star)" class="w-full bg-zinc-950 border border-zinc-700 text-white px-3 py-2.5 mb-4 text-xs font-mono outline-none rounded-md">
+                <button onclick="startDeployment()" class="w-full bg-amber-600/20 hover:bg-amber-600/40 border border-amber-600 text-amber-500 py-3 text-xs font-orbitron uppercase transition-all rounded-md">Select Location</button>
+            </div>
+            
+            <!-- The + Button -->
+            <button onclick="toggleModMenu()" id="fab-btn" class="w-16 h-16 bg-zinc-900 border-2 border-amber-600 rounded-full text-amber-500 text-3xl flex justify-center items-center hover:scale-110 hover:shadow-[0_0_20px_rgba(217,119,6,0.6)] transition-all">
+                +
+            </button>
+        </div>
+
+    </div>
+
+    <script>
+        // --- STATE & INITIALIZATION ---
+        let currentRole = '';
+        let currentTool = 'pan';
+        
+        let zoom = 1.0, panX = 0, panY = 0;
+        const MAX_ZOOM = 3.0, MIN_ZOOM = 0.4;
+        let isPanning = false, startX, startY;
+        
+        let isDeploying = false;
+        let deployData = null;
+        let isMoving = false;
+        let movingEntityId = null;
+        let selectedEntityId = null;
+
+        function initDashboard(role) {
+            currentRole = role;
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('dashboard').classList.remove('hidden');
+            const badge = document.getElementById('panel-badge');
+
+            if (role === 'sith') {
+                badge.innerText = "SITH NETWORK";
+                badge.className = "font-orbitron text-xs px-2 py-1 bg-red-950/30 border border-red-800 text-red-500 uppercase";
+            } else if (role === 'jedi') {
+                badge.innerText = "JEDI REGISTER";
+                badge.className = "font-orbitron text-xs px-2 py-1 bg-cyan-950/30 border border-cyan-800 text-cyan-400 uppercase";
+            } else if (role === 'mod') {
+                badge.innerText = "HQ MODERATOR";
+                badge.className = "font-orbitron text-xs px-2 py-1 bg-zinc-800 border border-zinc-600 text-white uppercase";
+                document.getElementById('mod-fab-container').classList.remove('hidden');
+                document.getElementById('mod-fab-container').classList.add('flex');
+            }
+            
+            setTimeout(() => setupMapLayer(), 100);
+            startClock();
+            
+            renderMessages();
+            renderEntities();
+            window.addEventListener('storage', (e) => {
+                if (e.key === 'mun_shared_comms') renderMessages();
+                if (e.key === 'mun_map_entities') renderEntities();
+            });
+        }
+
+        function startClock() {
+            setInterval(() => {
+                document.getElementById('live-clock').innerText = new Date().toTimeString().split(' ')[0];
+            }, 1000);
+        }
+
+        // --- COMMS & LOGGING ---
+        function sendSystemLog(message, isPublic = true) {
+            let logs = JSON.parse(localStorage.getItem('mun_shared_comms') || '[]');
+            logs.push({
+                id: Date.now(),
+                time: new Date().toTimeString().split(' ')[0],
+                sender: 'system',
+                channel: isPublic ? 'public' : 'global_mod',
+                message: message
+            });
+            localStorage.setItem('mun_shared_comms', JSON.stringify(logs));
+            renderMessages();
+        }
+
+        function sendMessage(targetType) {
+            const input = document.getElementById('msg-input');
+            const text = input.value.trim();
+            if (!text) return;
+            
+            let logs = JSON.parse(localStorage.getItem('mun_shared_comms') || '[]');
+            let dest = currentRole;
+            if (targetType === 'mod') dest = 'to_moderator';
+            if (currentRole === 'mod') dest = 'global_mod';
+
+            logs.push({ id: Date.now(), time: new Date().toTimeString().split(' ')[0], sender: currentRole, channel: dest, message: text });
+            localStorage.setItem('mun_shared_comms', JSON.stringify(logs));
+            
+            input.value = '';
+            renderMessages();
+        }
+
+        function renderMessages() {
+            const box = document.getElementById('chat-box');
+            box.innerHTML = '';
+            const logs = JSON.parse(localStorage.getItem('mun_shared_comms') || '[]');
+            
+            logs.forEach(msg => {
+                let isVisible = false;
+                if (currentRole === 'mod' || msg.channel === 'public') isVisible = true;
+                else if (currentRole === 'sith' && (msg.channel === 'sith' || msg.channel === 'global_mod' || msg.sender === 'sith')) isVisible = true;
+                else if (currentRole === 'jedi' && (msg.channel === 'jedi' || msg.channel === 'global_mod' || msg.sender === 'jedi')) isVisible = true;
+
+                if (isVisible) {
+                    let cClass = "text-zinc-400", tag = msg.sender.toUpperCase();
+                    if (msg.sender === 'sith') { tag = "SITH"; cClass = "text-red-500 font-bold"; }
+                    if (msg.sender === 'jedi') { tag = "JEDI"; cClass = "text-cyan-400 font-bold"; }
+                    if (msg.sender === 'mod') { tag = "MOD"; cClass = "text-amber-500 font-bold"; }
+                    if (msg.sender === 'system') { tag = "SYS"; cClass = "text-emerald-500 font-bold"; }
+
+                    let extra = msg.channel === 'to_moderator' ? "<span class='text-amber-600 text-[9px]'>[TO_MOD]</span>" : "";
+
+                    box.innerHTML += `
+                        <div class="bg-zinc-950/20 p-2 border-b border-zinc-900/40">
+                            <span class="text-zinc-500">[${msg.time}]</span> 
+                            <span class="${cClass} mr-1">&lt;${tag}&gt;${extra}</span> 
+                            <span class="text-zinc-300 break-words">${msg.message}</span>
+                        </div>
+                    `;
+                }
+            });
+            box.scrollTop = box.scrollHeight;
+        }
+
+        // --- MAP NAVIGATION (With Boundaries & Centering) ---
+        const viewport = document.getElementById('map-viewport');
+        const transformer = document.getElementById('map-transformer');
+        const img = document.getElementById('galaxy-map');
+        const canvas = document.getElementById('drawing-canvas');
+        
+        function setupMapLayer() { 
+            if(!img.complete) return;
+            canvas.width = img.width;
+            canvas.height = img.height;
+            updateTransform(); 
+        }
+
+        function updateTransform() {
+            if (!img.complete) return;
+            const vW = viewport.clientWidth;
+            const vH = viewport.clientHeight;
+            const mapW = canvas.width * zoom;
+            const mapH = canvas.height * zoom;
+
+            // Enforce Boundaries & Centering
+            if (mapW <= vW) {
+                panX = (vW - mapW) / 2;
+            } else {
+                panX = Math.min(0, Math.max(vW - mapW, panX));
+            }
+
+            if (mapH <= vH) {
+                panY = (vH - mapH) / 2;
+            } else {
+                panY = Math.min(0, Math.max(vH - mapH, panY));
+            }
+
+            transformer.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
+            document.getElementById('zoom-indicator').innerText = `${Math.round(zoom * 100)}%`;
+            hideContextMenu();
+        }
+        
+        function adjustZoom(factor) {
+            const prev = zoom;
+            zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom + factor));
+            const rect = viewport.getBoundingClientRect();
+            panX = (rect.width/2) - ((rect.width/2) - panX) * (zoom / prev);
+            panY = (rect.height/2) - ((rect.height/2) - panY) * (zoom / prev);
+            updateTransform();
+        }
+
+        function resetZoom() { zoom = 1.0; panX = 0; panY = 0; updateTransform(); }
+
+        function setTool(tool) {
+            if(isDeploying || isMoving) cancelActions();
+            currentTool = tool;
+            ['pan', 'draw', 'mark'].forEach(t => {
+                document.getElementById(`tool-${t}`).className = t === tool 
+                    ? "px-3 py-1 bg-zinc-900 border border-zinc-600 font-orbitron uppercase text-white transition-all rounded"
+                    : "px-3 py-1 bg-transparent border border-zinc-800 font-orbitron uppercase text-zinc-500 transition-all rounded";
+            });
+            hideContextMenu();
+        }
+
+        // --- ENTITY MANAGEMENT ---
+        function toggleModMenu() {
+            const menu = document.getElementById('mod-fab-menu');
+            const btn = document.getElementById('fab-btn');
+            if (menu.classList.contains('open')) {
+                menu.classList.remove('open');
+                btn.style.transform = "rotate(0deg)";
+            } else {
+                menu.classList.add('open');
+                btn.style.transform = "rotate(45deg)";
+            }
+        }
+
+        function setActionAlert(msg, colorClass) {
+            const alertBox = document.getElementById('action-alert');
+            if(!msg) { alertBox.classList.add('hidden'); return; }
+            alertBox.innerText = msg;
+            alertBox.className = `px-4 py-1 text-xs font-orbitron font-bold uppercase animate-pulse border rounded ${colorClass}`;
+            alertBox.classList.remove('hidden');
+        }
+
+        function startDeployment() {
+            const fac = document.getElementById('deploy-faction').value;
+            const type = document.getElementById('deploy-type').value;
+            const name = document.getElementById('deploy-name').value.trim();
+            if(!name) { alert("Please enter a name!"); return; }
+
+            deployData = { faction: fac, type: type, name: name };
+            isDeploying = true;
+            currentTool = 'deploy';
+            
+            toggleModMenu();
+            setActionAlert("Select Location on Map (Right-click to cancel)", "border-amber-500 text-amber-500 bg-amber-950/30");
+        }
+
+        function cancelActions() {
+            isDeploying = false;
+            deployData = null;
+            isMoving = false;
+            movingEntityId = null;
+            setActionAlert(null);
+            setTool('pan');
+        }
+
+        // Context Menu Logic
+        function showContextMenu(x, y, entity) {
+            selectedEntityId = entity.id;
+            const cm = document.getElementById('context-menu');
+            cm.style.left = `${x}px`;
+            cm.style.top = `${y}px`;
+            cm.classList.remove('hidden');
+
+            const title = document.getElementById('cm-title');
+            title.innerText = entity.name;
+            title.style.color = entity.faction === 'sith' ? '#ef4444' : '#06b6d4';
+
+            const actions = document.getElementById('cm-actions');
+            actions.innerHTML = '';
+
+            if (currentRole === 'mod') {
+                if (entity.pendingMove) {
+                    actions.innerHTML += `<button onclick="approveMove('${entity.id}')" class="text-left w-full px-2 py-1.5 text-xs bg-emerald-950 hover:bg-emerald-900 text-emerald-400 border border-emerald-800 rounded">✅ Approve Move</button>`;
+                    actions.innerHTML += `<button onclick="denyMove('${entity.id}')" class="text-left w-full px-2 py-1.5 text-xs bg-zinc-900 hover:bg-zinc-800 text-zinc-400 border border-zinc-700 mt-1 rounded">❌ Deny Move</button>`;
+                }
+                actions.innerHTML += `<button onclick="deleteEntity('${entity.id}')" class="text-left w-full px-2 py-1.5 text-xs text-zinc-400 hover:bg-zinc-800 mt-2 border border-zinc-800 rounded">🗑️ Delete Entity</button>`;
+                actions.innerHTML += `<button onclick="detonateEntity('${entity.id}')" class="text-left w-full px-2 py-1.5 text-xs bg-red-950/50 hover:bg-red-900 text-red-400 mt-1 border border-red-900 rounded">💥 Detonate</button>`;
+            } 
+            else if (currentRole === entity.faction) {
+                if (entity.pendingMove) {
+                    actions.innerHTML += `<div class="text-[10px] text-amber-500 py-1">Awaiting Mod Approval...</div>`;
+                    actions.innerHTML += `<button onclick="cancelMoveRequest('${entity.id}')" class="text-left w-full px-2 py-1.5 text-xs text-red-400 hover:bg-zinc-800 mt-1 border border-zinc-800 rounded">Cancel Request</button>`;
+                } else {
+                    actions.innerHTML += `<button onclick="startMoveRequest('${entity.id}')" class="text-left w-full px-2 py-1.5 text-xs text-zinc-300 hover:bg-zinc-800 border border-zinc-700 rounded">📍 Select Target (Move)</button>`;
+                }
+            } else {
+                actions.innerHTML += `<div class="text-[10px] text-zinc-500 py-1">No Authorization</div>`;
+            }
+        }
+
+        function hideContextMenu() {
+            document.getElementById('context-menu').classList.add('hidden');
+            selectedEntityId = null;
+        }
+
+        function startMoveRequest(id) {
+            hideContextMenu();
+            isMoving = true;
+            movingEntityId = id;
+            currentTool = 'move';
+            setActionAlert("Select New Target (Right-click to cancel)", "border-cyan-500 text-cyan-500 bg-cyan-950/30");
+        }
+
+        function approveMove(id) {
+            hideContextMenu();
+            let entities = JSON.parse(localStorage.getItem('mun_map_entities') || '[]');
+            let idx = entities.findIndex(e => e.id == id);
+            if(idx > -1 && entities[idx].pendingMove) {
+                entities[idx].x = entities[idx].pendingMove.x;
+                entities[idx].y = entities[idx].pendingMove.y;
+                entities[idx].pendingMove = null;
+                localStorage.setItem('mun_map_entities', JSON.stringify(entities));
+                renderEntities();
+                sendSystemLog(`[MOVEMENT] Mod Approved: '${entities[idx].name}' arrived at new coordinates.`, true);
+            }
+        }
+
+        function denyMove(id) {
+            hideContextMenu();
+            let entities = JSON.parse(localStorage.getItem('mun_map_entities') || '[]');
+            let idx = entities.findIndex(e => e.id == id);
+            if(idx > -1) {
+                entities[idx].pendingMove = null;
+                localStorage.setItem('mun_map_entities', JSON.stringify(entities));
+                renderEntities();
+                sendSystemLog(`[DENIED] Moderator rejected movement for '${entities[idx].name}'.`, false);
+            }
+        }
+        
+        function cancelMoveRequest(id) { denyMove(id); }
+
+        function deleteEntity(id) {
+            hideContextMenu();
+            let entities = JSON.parse(localStorage.getItem('mun_map_entities') || '[]');
+            entities = entities.filter(e => e.id != id);
+            localStorage.setItem('mun_map_entities', JSON.stringify(entities));
+            renderEntities();
+        }
+
+        function detonateEntity(id) {
+            hideContextMenu();
+            const el = document.getElementById(`entity-${id}`);
+            if(el) {
+                // Ekleme animasyon sınıfını çalıştır.
+                el.classList.add('explode-anim');
+                let entities = JSON.parse(localStorage.getItem('mun_map_entities') || '[]');
+                let ent = entities.find(e => e.id == id);
+                if(ent) sendSystemLog(`[DETONATION] Critical Alert: '${ent.name}' has been destroyed!`, true);
+                
+                // Animasyon süresi bitince sil.
+                setTimeout(() => { deleteEntity(id); }, 800);
+            } else {
+                deleteEntity(id);
+            }
+        }
+
+        // --- MAP CLICK ROUTING ---
+        viewport.addEventListener('mousedown', (e) => {
+            if(e.button === 2) { cancelActions(); return; } 
+            
+            if(e.target.closest('#context-menu')) return;
+            hideContextMenu();
+
+            const rect = transformer.getBoundingClientRect();
+            const rawX = (e.clientX - rect.left) / zoom;
+            const rawY = (e.clientY - rect.top) / zoom;
+
+            if (isDeploying && currentRole === 'mod') {
+                let entities = JSON.parse(localStorage.getItem('mun_map_entities') || '[]');
+                let newEnt = {
+                    id: Date.now().toString(),
+                    faction: deployData.faction,
+                    type: deployData.type,
+                    name: deployData.name,
+                    x: rawX, y: rawY,
+                    pendingMove: null
+                };
+                entities.push(newEnt);
+                localStorage.setItem('mun_map_entities', JSON.stringify(entities));
+                sendSystemLog(`[NEW DEPLOYMENT] Moderator deployed ${newEnt.name} (${newEnt.type}) for ${newEnt.faction.toUpperCase()}.`, true);
+                cancelActions();
+                renderEntities();
+                return;
+            }
+
+            if (isMoving && movingEntityId) {
+                let entities = JSON.parse(localStorage.getItem('mun_map_entities') || '[]');
+                let idx = entities.findIndex(e => e.id == movingEntityId);
+                if(idx > -1) {
+                    entities[idx].pendingMove = { x: rawX, y: rawY };
+                    localStorage.setItem('mun_map_entities', JSON.stringify(entities));
+                    
+                    let logs = JSON.parse(localStorage.getItem('mun_shared_comms') || '[]');
+                    logs.push({ id: Date.now(), time: new Date().toTimeString().split(' ')[0], sender: currentRole, channel: 'to_moderator', message: `Movement Request: Awaiting approval for ${entities[idx].name}.` });
+                    localStorage.setItem('mun_shared_comms', JSON.stringify(logs));
+                    
+                    cancelActions();
+                    renderEntities();
+                }
+                return;
+            }
+
+            if (currentTool === 'pan') { isPanning = true; startX = e.clientX - panX; startY = e.clientY - panY; }
+        });
+
+        viewport.addEventListener('mousemove', (e) => {
+            if (isPanning && currentTool === 'pan') {
+                panX = e.clientX - startX; panY = e.clientY - startY; updateTransform();
+            }
+        });
+
+        window.addEventListener('mouseup', () => { isPanning = false; });
+        viewport.addEventListener('contextmenu', e => e.preventDefault());
+        viewport.addEventListener('wheel', (e) => { e.preventDefault(); adjustZoom(e.deltaY < 0 ? 0.15 : -0.15); }, { passive: false });
+
+        // --- RENDER ENGINE ---
+        function renderEntities() {
+            const layer = document.getElementById('entity-layer');
+            const tbody = document.getElementById('intel-table-body');
+            layer.innerHTML = ''; tbody.innerHTML = '';
+            
+            const entities = JSON.parse(localStorage.getItem('mun_map_entities') || '[]');
+            
+            entities.forEach(ent => {
+                let colorClass = ent.faction === 'sith' ? 'border-red-600 bg-red-950 text-red-500 shadow-[0_0_10px_rgba(220,38,38,0.5)]' : 'border-cyan-500 bg-cyan-950 text-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.5)]';
+                let typeIcon = '🛸';
+                if(ent.type === 'Military Base') typeIcon = '🏰';
+                if(ent.type === 'Weapon') typeIcon = '⚔️';
+                if(ent.type === 'Space Station') typeIcon = '🛰️';
+                if(ent.type === 'Ship') typeIcon = '🚀';
+
+                const div = document.createElement('div');
+                div.id = `entity-${ent.id}`;
+                div.className = `absolute pointer-events-auto flex items-center justify-center rounded-full border-2 entity-marker ${colorClass} ${ent.pendingMove ? 'entity-pending shadow-[var(--tw-shadow-color)]' : ''}`;
+                div.style.width = '30px'; div.style.height = '30px';
+                div.style.left = `${ent.x - 15}px`; div.style.top = `${ent.y - 15}px`;
+                
+                div.innerHTML = `<span class="text-xs pointer-events-none">${typeIcon}</span>`;
+                
+                const label = document.createElement('div');
+                label.className = `absolute -bottom-5 w-max text-[10px] font-orbitron font-bold px-1 bg-black/80 pointer-events-none rounded ${ent.faction === 'sith' ? 'text-red-400' : 'text-cyan-400'}`;
+                label.innerText = ent.name;
+                div.appendChild(label);
+
+                div.addEventListener('click', (e) => {
+                    e.stopPropagation(); 
+                    if(currentTool !== 'pan') return;
+                    showContextMenu(e.clientX, e.clientY, ent);
+                });
+
+                layer.appendChild(div);
+
+                if (ent.pendingMove && (currentRole === 'mod' || currentRole === ent.faction)) {
+                    drawDashedLine(ent.x, ent.y, ent.pendingMove.x, ent.pendingMove.y, ent.faction);
+                }
+
+                let isVisible = currentRole === 'mod' || currentRole === ent.faction;
+                if(isVisible) {
+                    tbody.innerHTML += `
+                        <tr class="hover:bg-zinc-950/40">
+                            <td class="p-3 font-semibold ${ent.faction==='sith' ? 'text-red-400':'text-cyan-400'}">${ent.name}</td>
+                            <td class="p-3 text-right text-zinc-400">${ent.type}</td>
+                        </tr>
+                    `;
+                }
+            });
+        }
+
+        function drawDashedLine(x1, y1, x2, y2, faction) {
+            const layer = document.getElementById('entity-layer');
+            const length = Math.hypot(x2 - x1, y2 - y1);
+            const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+            
+            const line = document.createElement('div');
+            line.style.position = 'absolute';
+            line.style.left = `${x1}px`;
+            line.style.top = `${y1}px`;
+            line.style.width = `${length}px`;
+            line.style.height = '2px';
+            line.style.transformOrigin = '0 0';
+            line.style.transform = `rotate(${angle}deg)`;
+            line.style.borderTop = `2px dashed ${faction === 'sith' ? '#ef4444' : '#06b6d4'}`;
+            line.style.opacity = '0.5';
+            line.style.zIndex = '15';
+            layer.appendChild(line);
+
+            const target = document.createElement('div');
+            target.className = `absolute w-4 h-4 border-2 rounded-full -ml-2 -mt-2 animate-ping opacity-75 ${faction === 'sith' ? 'border-red-500' : 'border-cyan-500'}`;
+            target.style.left = `${x2}px`;
+            target.style.top = `${y2}px`;
+            layer.appendChild(target);
+        }
+    </script>
+</body>
+</html>
