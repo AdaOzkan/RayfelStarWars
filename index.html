@@ -1050,9 +1050,18 @@
             const entities = JSON.parse(localStorage.getItem('mun_map_entities') || '[]');
             
             let stats = {
-                sith: { base: 0, ship: 0, person: 0 },
-                jedi: { base: 0, ship: 0, person: 0 }
-            };
+                    sith: { base: 5, ship: 20, person: 12 },
+                    jedi: { base: 5, ship: 20, person: 12 }
+                };
+
+                entities.forEach(ent => {
+                    let f = ent.faction;
+                    if(stats[f]) {
+                        if(ent.type === 'Person') stats[f].person++;
+                        else if(ent.type === 'Ship' || ent.type === 'Cruiser') stats[f].ship++;
+                        else stats[f].base++;
+                    }
+                });
 
             entities.forEach(ent => {
                 let f = ent.faction;
@@ -1196,6 +1205,27 @@
             target.style.top = `${y2}px`;
             layer.appendChild(target);
         }
+
+        function initializeStartingForces() {
+            let entities = [];
+            
+            // 12 Sith Personeli
+            for(let i=1; i<=12; i++) {
+                entities.push({ id: 'sith-p'+i, faction: 'sith', type: 'Person', name: 'Sith Trooper '+i, x: 100 + (i*20), y: 100, boardedIn: null });
+            }
+            // 12 Jedi Personeli
+            for(let i=1; i<=12; i++) {
+                entities.push({ id: 'jedi-p'+i, faction: 'jedi', type: 'Person', name: 'Jedi Knight '+i, x: 1800 - (i*20), y: 1800, boardedIn: null });
+            }
+            
+            // Başlangıç Araçları
+            entities.push({ id: 'sith-ship1', faction: 'sith', type: 'Ship', name: 'Sith Infiltrator', x: 200, y: 200, boardedIn: null });
+            entities.push({ id: 'jedi-ship1', faction: 'jedi', type: 'Ship', name: 'Republic Cruiser', x: 1700, y: 1700, boardedIn: null });
+
+            localStorage.setItem('mun_map_entities', JSON.stringify(entities));
+            renderEntities();
+        }
+
     </script>
 </body>
 </html>
