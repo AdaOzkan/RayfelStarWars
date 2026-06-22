@@ -1,40 +1,40 @@
 @font-face {
-            font-family: 'StarJedi';
-            src: url('Starjedi.ttf') format('truetype');
-        }
-        
-        body { font-family: 'Rajdhani', sans-serif; background-color: #030303; color: #f3f4f6; overflow: hidden; }
-        .font-orbitron { font-family: 'Orbitron', sans-serif; font-weight: 700; }
-        .font-starjedi { font-family: 'StarJedi', 'Orbitron', sans-serif; letter-spacing: 0.1em; }
-        
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #0a0a0c; }
-        ::-webkit-scrollbar-thumb { background: #222530; border-radius: 3px; }
-        .map-viewport { background-image: radial-gradient(rgba(255,255,255,0.03) 1px, transparent 0); background-size: 24px 24px; }
-        
-        /* Mod FAB Animation & Rounded Style */
-        .fab-menu { 
-            transform: scaleY(0) scaleX(0); 
-            transform-origin: bottom right; 
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s; 
-            opacity: 0; 
-            border-radius: 2rem;
-        }
-        .fab-menu.open { transform: scaleY(1) scaleX(1); opacity: 1; }
-        
-        /* Entity Animations */
-        @keyframes pulse-ring { 0% { box-shadow: 0 0 0 0 rgba(var(--tw-shadow-color), 0.7); } 70% { box-shadow: 0 0 0 10px rgba(var(--tw-shadow-color), 0); } 100% { box-shadow: 0 0 0 0 rgba(var(--tw-shadow-color), 0); } }
-        .entity-marker { transition: left 2s ease-in-out, top 2s ease-in-out; cursor: pointer; z-index: 25; }
-        .entity-pending { animation: pulse-ring 2s infinite; }
+    font-family: 'StarJedi';
+    src: url('Starjedi.ttf') format('truetype');
+}
 
-        /* Detonate Animation */
-        @keyframes explode {
-            0% { transform: scale(1); opacity: 1; filter: drop-shadow(0 0 5px red); background-color: inherit; }
-            40% { transform: scale(2.5); opacity: 1; filter: drop-shadow(0 0 20px #ffaa00) brightness(2); background-color: #ffaa00; border-color: #fff; }
-            100% { transform: scale(5); opacity: 0; filter: drop-shadow(0 0 50px red); background-color: red; }
-        }
-        .explode-anim {
-            animation: explode 0.8s forwards ease-out !important;
-            pointer-events: none;
-            z-index: 50;
-        }
+body { font-family: 'Rajdhani', sans-serif; background-color: #030303; color: #f3f4f6; overflow: hidden; }
+.font-orbitron { font-family: 'Orbitron', sans-serif; font-weight: 700; }
+.font-starjedi { font-family: 'StarJedi', 'Orbitron', sans-serif; letter-spacing: 0.1em; }
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #0a0a0c; }
+::-webkit-scrollbar-thumb { background: #222530; border-radius: 3px; }
+.map-viewport { background-image: radial-gradient(rgba(255,255,255,0.03) 1px, transparent 0); background-size: 24px 24px; }
+
+/* Mod FAB Animation & Rounded Style */
+.fab-menu { 
+    transform: scaleY(0) scaleX(0); 
+    transform-origin: bottom right; 
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s; 
+    opacity: 0; 
+    border-radius: 2rem;
+}
+.fab-menu.open { transform: scaleY(1) scaleX(1); opacity: 1; }
+
+/* Entity Animations */
+@keyframes pulse-ring { 0% { box-shadow: 0 0 0 0 rgba(var(--tw-shadow-color), 0.7); } 70% { box-shadow: 0 0 0 10px rgba(var(--tw-shadow-color), 0); } 100% { box-shadow: 0 0 0 0 rgba(var(--tw-shadow-color), 0); } }
+.entity-marker { transition: left 2s ease-in-out, top 2s ease-in-out; cursor: pointer; z-index: 25; }
+.entity-pending { animation: pulse-ring 2s infinite; }
+
+/* Detonate Animation */
+@keyframes explode {
+    0% { transform: scale(1); opacity: 1; filter: drop-shadow(0 0 5px red); background-color: inherit; }
+    40% { transform: scale(2.5); opacity: 1; filter: drop-shadow(0 0 20px #ffaa00) brightness(2); background-color: #ffaa00; border-color: #fff; }
+    100% { transform: scale(5); opacity: 0; filter: drop-shadow(0 0 50px red); background-color: red; }
+}
+.explode-anim {
+    animation: explode 0.8s forwards ease-out !important;
+    pointer-events: none;
+    z-index: 50;
+}
