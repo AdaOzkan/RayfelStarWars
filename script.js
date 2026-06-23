@@ -55,6 +55,11 @@ let isZoning = false;
 let zoneStart = null;
 let previewZone = null;
 
+function hideContextMenu() {
+    const cm = document.getElementById('context-menu');
+    if(cm) cm.classList.add('hidden');
+}
+
 // LOGIN ATTEMPT VALIDATION
 function attemptLogin(role) {
     const passwordInput = document.getElementById('role-password');
@@ -77,7 +82,6 @@ function attemptLogin(role) {
 }
 
 function initDashboard(role) {
-    // 11 Jedi & 11 Sith Load trigger if none exists
     if (!localStorage.getItem('mun_map_entities')) {
         initializeStartingForces();
     }
@@ -192,13 +196,17 @@ function focusOnSystem(sys) {
 
     if (!letter || !number) return;
 
-    const colIndex = letter.toUpperCase().charCodeAt(0) - 65; 
+    // YENİ HESAPLAMA: "C" kolonu başlangıç (0. indeks) ve "1" satırı başlangıç (0. indeks)
+    // C'nin ASCII karşılığı 67'dir. Gelen harften 67 çıkartarak indeksini buluyoruz.
+    const colIndex = letter.toUpperCase().charCodeAt(0) - 67; 
     const rowIndex = number - 1; 
 
-    const mapW = canvas.width;
-    const mapH = canvas.height;
-    const x = (colIndex + 0.5) * (mapW / 24);
-    const y = (rowIndex + 0.5) * (mapH / 22);
+    // Her bir kare 145x145 piksel
+    const squareSize = 145;
+    
+    // Karenin tam ortasına gelmek için indekse 0.5 ekleyip boyutla çarpıyoruz
+    const x = (colIndex + 0.5) * squareSize;
+    const y = (rowIndex + 0.5) * squareSize;
 
     zoom = 1.5; 
     const vW = viewport.clientWidth;
@@ -670,15 +678,36 @@ function detonateEntity(id) {
     }
 }
 
+// --- NEW INTERACTIVE FEATURE: Click Entity to Focus ---
+function focusOnEntity(ent) {
+    zoom = 1.8; 
+    const vW = viewport.clientWidth;
+    const vH = viewport.clientHeight;
+    panX = (vW / 2) - (ent.x * zoom);
+    panY = (vH / 2) - (ent.y * zoom);
+    updateTransform();
+    
+    const el = document.getElementById(`entity-${ent.id}`);
+    if(el) {
+        el.style.transition = "transform 0.3s, box-shadow 0.3s";
+        el.style.transform = "scale(1.8)";
+        el.style.boxShadow = ent.faction === 'sith' ? "0 0 25px #ef4444" : "0 0 25px #06b6d4";
+        setTimeout(() => {
+            el.style.transform = "scale(1)";
+            el.style.boxShadow = "";
+        }, 1200);
+    }
+}
+
 // --- MAP CLICK ROUTING ---
 viewport.addEventListener('mousedown', (e) => {
     if(e.button === 2) { cancelActions(); return; } 
     if(e.target.closest('#context-menu')) return;
     hideContextMenu();
 
-    const rect = transformer.getBoundingClientRect();
-    const rawX = (e.clientX - rect.left) / zoom;
-    const rawY = (e.clientY - rect.top) / zoom;
+    const vRect = viewport.getBoundingClientRect();
+    const rawX = (e.clientX - vRect.left - panX) / zoom;
+    const rawY = (e.clientY - vRect.top - panY) / zoom;
 
     if (isDeploying && currentRole === 'mod') {
         let entities = JSON.parse(localStorage.getItem('mun_map_entities') || '[]');
@@ -736,9 +765,9 @@ viewport.addEventListener('mousedown', (e) => {
 });
 
 viewport.addEventListener('mousemove', (e) => {
-    const rect = transformer.getBoundingClientRect();
-    const rawX = (e.clientX - rect.left) / zoom;
-    const rawY = (e.clientY - rect.top) / zoom;
+    const vRect = viewport.getBoundingClientRect();
+    const rawX = (e.clientX - vRect.left - panX) / zoom;
+    const rawY = (e.clientY - vRect.top - panY) / zoom;
 
     if (isPanning && currentTool === 'pan') {
         panX = e.clientX - startX; panY = e.clientY - startY; updateTransform();
@@ -774,9 +803,9 @@ window.addEventListener('mouseup', (e) => {
     if (isZoning) {
         isZoning = false;
         if(previewZone) {
-            const rect = transformer.getBoundingClientRect();
-            const endX = (e.clientX - rect.left) / zoom;
-            const endY = (e.clientY - rect.top) / zoom;
+            const vRect = viewport.getBoundingClientRect();
+            const endX = (e.clientX - vRect.left - panX) / zoom;
+            const endY = (e.clientY - vRect.top - panY) / zoom;
             
             let minX = Math.min(zoneStart.x, endX);
             let minY = Math.min(zoneStart.y, endY);
@@ -860,12 +889,15 @@ function renderEntities() {
             if(pbody) {
                 let vehicle = entities.find(v => v.id === ent.boardedIn);
                 let statusText = vehicle ? `Inside: ${vehicle.name}` : 'Boarded';
-                pbody.innerHTML += `
-                    <tr class="hover:bg-zinc-950/40">
-                        <td class="p-3 font-semibold ${ent.faction==='sith' ? 'text-red-400':'text-cyan-400'}">${ent.name} 👤</td>
-                        <td class="p-3 text-right text-zinc-500 italic">${statusText}</td>
-                    </tr>
+                
+                let tr = document.createElement('tr');
+                tr.className = "hover:bg-zinc-950/40 cursor-pointer transition-colors";
+                tr.onclick = () => { if(vehicle) focusOnEntity(vehicle); };
+                tr.innerHTML = `
+                    <td class="p-3 font-semibold ${ent.faction==='sith' ? 'text-red-400':'text-cyan-400'}">${ent.name} 👤</td>
+                    <td class="p-3 text-right text-zinc-500 italic">${statusText}</td>
                 `;
+                pbody.appendChild(tr);
             }
             return; 
         }
@@ -920,21 +952,25 @@ function renderEntities() {
 
         if(ent.type === 'Person') {
             if(pbody) {
-                pbody.innerHTML += `
-                    <tr class="hover:bg-zinc-950/40">
-                        <td class="p-3 font-semibold ${ent.faction==='sith' ? 'text-red-400':'text-cyan-400'}">${ent.name} 👤</td>
-                        <td class="p-3 text-right text-zinc-400">On Map</td>
-                    </tr>
+                let tr = document.createElement('tr');
+                tr.className = "hover:bg-zinc-950/40 cursor-pointer transition-colors";
+                tr.onclick = () => focusOnEntity(ent);
+                tr.innerHTML = `
+                    <td class="p-3 font-semibold ${ent.faction==='sith' ? 'text-red-400':'text-cyan-400'}">${ent.name} 👤</td>
+                    <td class="p-3 text-right text-zinc-400">On Map</td>
                 `;
+                pbody.appendChild(tr);
             }
         } else {
             if(tbody) {
-                tbody.innerHTML += `
-                    <tr class="hover:bg-zinc-950/40">
-                        <td class="p-3 font-semibold ${ent.faction==='sith' ? 'text-red-400':'text-cyan-400'}">${ent.name}</td>
-                        <td class="p-3 text-right text-zinc-400">${ent.type}</td>
-                    </tr>
+                let tr = document.createElement('tr');
+                tr.className = "hover:bg-zinc-950/40 cursor-pointer transition-colors";
+                tr.onclick = () => focusOnEntity(ent);
+                tr.innerHTML = `
+                    <td class="p-3 font-semibold ${ent.faction==='sith' ? 'text-red-400':'text-cyan-400'}">${ent.name}</td>
+                    <td class="p-3 text-right text-zinc-400">${ent.type}</td>
                 `;
+                tbody.appendChild(tr);
             }
         }
     });
