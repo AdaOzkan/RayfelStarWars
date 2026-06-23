@@ -6,34 +6,61 @@ const PASSWORDS = {
 };
 
 // --- GALACTIC DATABASE (Search System) ---
-const galacticDatabase = [
-    { name: "5251977", grid: "P-18" }, { name: "A-Foroon", grid: "R-16" },
-    { name: "Aargau", grid: "L-10" }, { name: "Ahch-To", grid: "F-13" },
-    { name: "Ajan Kloss", grid: "L-5" }, { name: "Alderaan", grid: "M-10" },
-    { name: "Anaxes", grid: "R-7" }, { name: "Atollon", grid: "T-7" },
-    { name: "Bakura", grid: "G-16" }, { name: "Batuu", grid: "I-14" },
-    { name: "Bespin", grid: "K-18" }, { name: "Bothawui", grid: "R-14" },
-    { name: "Cato Neimoidia", grid: "N-11" }, { name: "Christophsis", grid: "Q-16" },
-    { name: "Corellia", grid: "M-11" }, { name: "Coruscant", grid: "L-9" },
-    { name: "Crait", grid: "N-17" }, { name: "D'Qar", grid: "O-17" },
-    { name: "Dagobah", grid: "M-19" }, { name: "Dathomir", grid: "O-6" },
-    { name: "Endor", grid: "H-16" }, { name: "Eriadu", grid: "M-18" },
-    { name: "Exegol", grid: "F-7" }, { name: "Felucia", grid: "R-6" },
-    { name: "Fondor", grid: "L-13" }, { name: "Geonosis", grid: "R-16" },
-    { name: "Hapes", grid: "O-9" }, { name: "Hoth", grid: "K-18" },
-    { name: "Ilum", grid: "G-7" }, { name: "Jakku", grid: "I-13" },
-    { name: "Jedha", grid: "H-10" }, { name: "Kamino", grid: "S-15" },
-    { name: "Kashyyyk", grid: "P-9" }, { name: "Kessel", grid: "T-10" },
-    { name: "Kuat", grid: "M-10" }, { name: "Lothal", grid: "U-7" },
-    { name: "Mandalore", grid: "O-7" }, { name: "Mon Cala", grid: "U-6" },
-    { name: "Mustafar", grid: "L-19" }, { name: "Mygeeto", grid: "K-5" },
-    { name: "Naboo", grid: "O-17" }, { name: "Nal Hutta", grid: "S-12" },
-    { name: "Onderon", grid: "O-9" }, { name: "Polis Massa", grid: "K-20" },
-    { name: "Ryloth", grid: "R-17" }, { name: "Scarif", grid: "S-15" },
-    { name: "Sullust", grid: "M-17" }, { name: "Takodana", grid: "J-16" },
-    { name: "Tatooine", grid: "R-16" }, { name: "Utapau", grid: "N-19" },
-    { name: "Yavin", grid: "P-6" }, { name: "Zakuul", grid: "D-13" }
+const cloneWarsPlanets = [
+    { name: "Anaxes", grid: "R-7" },
+    { name: "Alderaan", grid: "M-10" },
+    { name: "Aargau", grid: "L-10" },
+    { name: "Bakura", grid: "G-16" },
+    { name: "Batuu", grid: "I-14" },
+    { name: "Bespin", grid: "K-18" },
+    { name: "Bothawui", grid: "R-14" },
+    { name: "Cato Neimoidia", grid: "N-11" },
+    { name: "Christophsis", grid: "Q-16" },
+    { name: "Corellia", grid: "M-11" },
+    { name: "Coruscant", grid: "L-9" },
+    { name: "Dagobah", grid: "M-19" },
+    { name: "Dantooine", grid: "P-6" },
+    { name: "Dathomir", grid: "O-6" },
+    { name: "Devaron", grid: "M-13" },
+    { name: "Duro", grid: "L-11" },
+    { name: "Endor", grid: "H-16" },
+    { name: "Eriadu", grid: "M-18" },
+    { name: "Felucia", grid: "R-6" },
+    { name: "Florrum", grid: "R-5" },
+    { name: "Fondor", grid: "L-13" },
+    { name: "Geonosis", grid: "R-16" },
+    { name: "Hapes", grid: "O-9" },
+    { name: "Hoth", grid: "K-18" },
+    { name: "Ilum", grid: "G-7" },
+    { name: "Kamino", grid: "S-15" },
+    { name: "Kashyyyk", grid: "P-9" },
+    { name: "Kessel", grid: "T-10" },
+    { name: "Kuat", grid: "M-10" },
+    { name: "Lola Sayu", grid: "O-11" },
+    { name: "Malastare", grid: "N-16" },
+    { name: "Mandalore", grid: "O-7" },
+    { name: "Maridun", grid: "P-12" },
+    { name: "Mon Cala", grid: "U-6" },
+    { name: "Moraband", grid: "R-7" },
+    { name: "Mustafar", grid: "L-19" },
+    { name: "Muunilist", grid: "K-4" },
+    { name: "Mygeeto", grid: "K-5" },
+    { name: "Naboo", grid: "O-17" },
+    { name: "Nal Hutta", grid: "S-12" },
+    { name: "Onderon", grid: "O-9" },
+    { name: "Polis Massa", grid: "K-20" },
+    { name: "Raxus Secundus", grid: "T-7" },
+    { name: "Rishi", grid: "S-13" },
+    { name: "Rodia", grid: "R-16" },
+    { name: "Ryloth", grid: "R-17" },
+    { name: "Saleucami", grid: "S-9" },
+    { name: "Scipio", grid: "L-8" },
+    { name: "Sullust", grid: "M-17" },
+    { name: "Umbara", grid: "P-10" },
+    { name: "Utapau", grid: "N-19" },
+    { name: "Yavin", grid: "P-6" }
 ];
+
 
 // --- STATE & INITIALIZATION ---
 let currentRole = '';
@@ -1028,8 +1055,8 @@ function drawDashedLine(x1, y1, x2, y2, faction) {
 function initializeStartingForces() {
     let entities = [];
     
-    const jediNames = ["Yoda", "Mace Windu", "Obi-Wan Kenobi", "Anakin Skywalker", "Ahsoka Tano", "Plo Koon", "Ki-Adi-Mundi", "Kit Fisto", "Shaak Ti", "Aayla Secura", "Luminara Unduli"];
-    const sithNames = ["Darth Sidious", "Count Dooku", "Darth Maul", "Savage Opress", "Asajj Ventress", "Mother Talzin", "General Grievous", "Quinlan Vos", "Sora Bulq", "Barriss Offee", "Darth Vader"];
+    const jediNames = ["Yoda", "Mace Windu", "Obi-Wan Kenobi", "Anakin Skywalker", "Ahsoka Tano", "Captain Rex", "Plo Koon", "Fives", "Commander Cody", "Kit Fisto", "Echo"];
+    const sithNames = ["Darth Sidious", "Count Dooku", "Darth Maul", "Savage Opress", "Asajj Ventress", "Jango Fett", "General Grievous", "Mother Talzin", "Sora Bulq", "Cad Bane", "Aurra Sing"];
     
     // Sith Personeli
     sithNames.forEach((name, i) => {
