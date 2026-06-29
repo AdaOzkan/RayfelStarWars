@@ -1,8 +1,8 @@
 // --- PASSWORDS ---
 const PASSWORDS = {
-    jedi: "LightSideRayfelmun'26",
-    sith: "Rayfelmun'26DarkSide",
-    mod: "RayfelMun'26_FJCCadministrator"
+    jedi: "1",
+    sith: "2",
+    mod: "3"
 };
 
 // --- GALACTIC DATABASE (Search System) ---
