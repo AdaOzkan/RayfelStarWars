@@ -1,8 +1,8 @@
 // --- PASSWORDS ---
 const PASSWORDS = {
-    jedi: "1",
-    sith: "2",
-    mod: "3"
+    jedi: "jedi",
+    sith: "sith",
+    mod: "mod"
 };
 
 // --- GALACTIC DATABASE (Search System) ---
